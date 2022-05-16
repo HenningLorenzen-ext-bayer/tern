@@ -458,9 +458,7 @@ build_table(lyt = lyt_st2, df = anl_st2)
 
 ### Re-factor?
 
--   Perhaps it would be better to re-factor the code so that model fitting
-is done separately from the table generation, similar to how Cox regression,
-logistic regression, and MMRM currently work.
+-   Perhaps it would be better to re-factor the code so that model fitting is done separately from the table generation, similar to how Cox regression, logistic regression, and MMRM currently work.
 
 ```{r, eval = FALSE}
 fit_glm_count <- function(data,
