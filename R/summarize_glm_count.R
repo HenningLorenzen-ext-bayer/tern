@@ -1,7 +1,6 @@
 #' Summary for Poisson Negative Binomial.
 #'
-#' Summarize results of a Poisson Negative Binomial Regression. This can be used to analyze multiple endpoints and/or
-#' multiple timepoints within the same response variable `.var`.
+#' Summarize results of a Poisson Negative Binomial Regression. This can be used to analyze count and/or frequency data using a linear model.
 #'
 #' @name summarize_glm_count
 #'
@@ -18,18 +17,18 @@ NULL
 #'   reference group.
 #'   - `covariates`: (`character`)\cr a vector that can contain single variable names (such as
 #'   `"X1"`), and/or interaction terms indicated by `"X1 * X2"`.
-#'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset to the predictions.
-#' @param `weights`(`numeric`)\cr a character value or numeric vector specifying weights used in averaging predictions.
+#'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset to the predictions. If specified, this adds an offset to the predictions.
+#' @param `weights`(`numeric`)\cr a numeric value specifying weights used in averaging predictions.
 #'
 #' @export
 #'
 #' @examples
 
 #' h_glm_poisson(
-#'   .var = "count_f",
-#'   .df_row = an1,
+#'   .var = "count",
+#'   .df_row = anl,
 #'   variables = list(arm = "arm", offset = "ln_time_at_risk", covariates = c("histology", "stage", "time")),
-#'   weights =- (0.5, 0.9)
+#'   weights = 0.5
 #' )
 
 h_glm_poisson <- function(.var,
@@ -48,7 +47,7 @@ h_glm_poisson <- function(.var,
     formula <- update(formula, forumla_new)
   }
 
-  if(!is.null(variables$offset)) {
+  if (!is.null(variables$offset)) {
     offset <- variables$offset
     forumla_new <- as.formula(paste("~ . +", paste("offset(", offset, ")")))
     formula <- update(formula, forumla_new)
@@ -75,30 +74,21 @@ h_glm_poisson <- function(.var,
   )
 }
 
-#' @describeIn summarize_glm_count Helper function to return results of a quasipoisson model.
+#' @describeIn summarize_glm_count Helper function to return results of a poisson model.
 #' @inheritParams argument_convention
-#' @param .df_row (`data frame`)\cr data set that includes all the variables that are called
-#'   in `.var` and `variables`.
-#' @param variables (named `list` of `strings`)\cr list of additional analysis variables, with
-#'   expected elements:
-#'   - `arm`: (`string`)\cr group variable, for which the covariate adjusted means of multiple
-#'   groups will be summarized. Specifically, the first level of `arm` variable is taken as the
-#'   reference group.
-#'   - `covariates`: (`character`)\cr a vector that can contain single variable names (such as
-#'   `"X1"`), and/or interaction terms indicated by `"X1 * X2"`.
-#'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset to the predictions.
-#' @param `weights`(`numeric`)\cr a character value or numeric vector specifying weights used in averaging predictions.
+#' @inheritParams h_glm_poisson
 #'
-#'@export
+#' @export
 #'
 #' @examples
+#'
 #' h_glm_quasipoisson(
-#'   .var = "count_f",
+#'   .var = "count",
 #'   .df_row = anl,
-#'   variables = list(arm = "arm", offset = "ln_time_at_risk", c("histology", "stage", "time")),
-#'   weights = c(0.5, 0.9)
+#'   variables = list(arm = "arm", offset = "ln_time_at_risk", covariates = c("histology", "stage", "time")),
+#'   weights = 0.5
 #' )
-
+#'
 h_glm_quasipoisson <- function(.var,
                                .df_row,
                                variables,
@@ -115,7 +105,7 @@ h_glm_quasipoisson <- function(.var,
     formula <- update(formula, forumla_new)
   }
 
-  if(!is.null(variables$offset)) {
+  if (!is.null(variables$offset)) {
     covariates <- variables$covariates
     forumla_new <- as.formula(paste("~ . +", paste("offset(", offset, ")")))
     formula <- update(formula, forumla_new)
@@ -155,7 +145,7 @@ h_glm_quasipoisson <- function(.var,
 #'   `"X1"`), and/or interaction terms indicated by `"X1 * X2"`.
 #'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset to the predictions.
 #' @param `weights`(`numeric`)\cr numeric value specifying weight used in averaging predictions.
-#' @param `distribution`(`character`)\cr a character value specifying the distribution used in the regression.
+#' @param `distribution`(`character`)\cr a character value specifying the distribution used in the regression (Poisson, Quasipoisson, Negative Binomial).
 #'
 #' @export
 #'
@@ -166,16 +156,14 @@ h_glm_quasipoisson <- function(.var,
 #'   variables = list(arm = "arm", offset = "ln_time_at_risk", c("histology", "stage", "time")),
 #'   distribution = "poisson",
 #'   weights = 0.1
-#'   )
-
-
+#' )
+#'
 h_glm_count <- function(.var,
                         .df_row,
                         variables,
                         distribution,
                         weights) {
-  switch(
-    distribution,
+  switch(distribution,
     poisson = h_glm_poisson(.var, .df_row, variables, weights),
     quasipoisson = h_glm_quasipoisson(.var, .df_row, variables, weights),
     negbin = h_glm_negbin(.var, .df_row, variables, weights)
@@ -189,7 +177,7 @@ h_glm_count <- function(.var,
 #'   in `.var` and `variables`.
 # `list` of `strings`)\cr list of model fitting results.
 #' @param conf_level (`numeric`) value used to derive the poisson mean.
-#' @param obj (`glm.fit`) fitted model object used to derive the poisson mean.
+#' @param obj (`glm.fit`) fitted model object used to derive the mean estimates.
 #' @param `arm`: (`string`)\cr group variable, for which the covariate adjusted means of multiple
 #'   groups will be summarized. Specifically, the first level of `arm` variable is taken as the
 #'   reference group.
@@ -197,11 +185,14 @@ h_glm_count <- function(.var,
 #'
 #' @examples
 #'
-#' h_ppmeans ()
+#' h_ppmeans(
+#'   obj = obj,
+#'   .df_row = anl,
+#'   arm = "arm",
+#'   conf_level = 0.9
+#' )
 #'
-
 h_ppmeans <- function(obj, .df_row, arm, conf_level) {
-
   alpha <- 1 - conf_level
   p <- 1 - alpha / 2
 
@@ -240,29 +231,36 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
   out
 }
 
+
 #' @describeIn summarize_ancova Statistics function that produces a named list of results
 #'   of the investigated poisson model.
 #' @inheritParams argument_convention
-#' @inheritParams h_glm_poisson
-#' @inheritParams h_glm_quasipoisson
 #' @inheritParams h_glm_count
-
 #'
 #' @return A named list of 5 statistics:
 #'   - `n`: count of complete sample size for the group.
-#'   - `lsmean`: estimated marginal means in the group.
-#'   - `lsmean_diff`: difference in estimated marginal means in comparison to the reference
-#'   group. If working with the reference group, this will be empty.
-#'   - `lsmean_diff_ci`: confidence level for difference in estimated marginal means in
+#'   - `rate`: estimated number of events per time (or space).
+#'   - `rate_ci`: confidence level for difference in incidence rate in
 #'   comparison to the reference group.
-#'   - `pval`: p-value (not adjusted for multiple comparisons).
+#'   - `rate_ratio`: Relative risk or incidence rate ratio.
+#'   - `rate_ratio_ci`: confidence level for the incidence rate ratio.
+#'   - `pval`: p-value.
 #'
 #' @export
 #'
 #' @examples
 #'
+#' s_glm_count(
+#'   df = anl,
+#'   .df_row = anl,
+#'   .var = "count",
+#'   .in_ref_col = FALSE,
+#'   variables = list(arm = arm, offset = "ln_time_at_risk", covariates = covars),
+#'   conf_level = 0.95,
+#'   distribution = "poisson",
+#'   rate_mean_method = "ppmeans"
+#' )
 #'
-
 s_glm_count <- function(df,
                         .var,
                         .df_row,
@@ -351,7 +349,7 @@ s_glm_count <- function(df,
 #'
 #' @examples
 #' a_glm_count(df, .var, .df_row, variables, .ref_group, .in_ref_col = FALSE, conf_level)
-
+#'
 a_glm_count <- make_afun(
   s_glm_count,
   .indent_mods = c(
@@ -379,43 +377,38 @@ a_glm_count <- make_afun(
 #' @export
 #' @examples
 #'
-#' adqs_single <- adqs %>%
-#'   filter(
-#'     AVISIT == "WEEK 1 DAY 8", # single time point
-#'     PARAMCD == "FKSI-FWB" # single end point
-#'   ) %>%
-#'   mutate(CHG = ifelse(BMEASIFL == "Y", CHG, NA)) # only analyze evaluable population
-#' adqs_multi <- adqs %>%
-#'   filter(AVISIT == "WEEK 1 DAY 8")
-#'
-#' basic_table() %>%
-#'   split_cols_by("ARMCD", ref_group = "ARM A") %>%
+#' lyt <- basic_table() %>%
+#'   split_cols_by(arm, ref_group = "B") %>%
 #'   add_colcounts() %>%
-#'   summarize_ancova(
-#'     vars = "CHG",
-#'     variables = list(arm = "ARMCD", covariates = NULL),
+#'   summarize_vars(
+#'     "count_f",
+#'     var_labels = "Number of exacerbations per patient",
+#'     .stats = c("count_fraction")
+#'   ) %>%
+#'   summarize_glm_count(
+#'     vars = "count",
+#'     variables = list(arm = arm, offset = offset, covariates = NULL),
+#'     conf_level = 0.95,
+#'     distribution = "poisson",
+#'     rate_mean_method = "emmeans",
+#'     var_labels = "Unadjusted exacerbation rate (per year)",
 #'     table_names = "unadj",
-#'     conf_level = 0.95, var_labels = "Unadjusted comparison",
-#'     .labels = c(lsmean = "Mean", lsmean_diff = "Difference in Means")
+#'     .stats = "rate",
+#'     .labels = c(rate = "Rate")
 #'   ) %>%
-#'   summarize_ancova(
-#'     vars = "CHG",
-#'     variables = list(arm = "ARMCD", covariates = c("BASE", "STRATA1")),
+#'   summarize_glm_count(
+#'     vars = "count",
+#'     variables = list(arm = arm, offset = "ln_time_at_risk", covariates = covars),
+#'     conf_level = 0.95,
+#'     distribution = "quasipoisson",
+#'     rate_mean_method = "ppmeans",
+#'     var_labels = "Adjusted (QP) exacerbation rate (per year)",
 #'     table_names = "adj",
-#'     conf_level = 0.95, var_labels = "Adjusted comparison (covariates BASE and STRATA1)"
-#'   ) %>%
-#'   build_table(adqs_single, alt_counts_df = adsl)
-#' \dontrun{
-#' basic_table() %>%
-#'   split_cols_by("ARMCD", ref_group = "ARM A") %>%
-#'   split_rows_by("PARAMCD") %>%
-#'   summarize_ancova(
-#'     vars = "CHG",
-#'     variables = list(arm = "ARMCD", covariates = c("BASE", "STRATA1")),
-#'     conf_level = 0.95, var_labels = "Adjusted mean"
-#'   ) %>%
-#'   build_table(adqs_multi, alt_counts_df = adsl)
-#' }
+#'     .stats = c("rate", "rate_ci", "rate_ratio", "rate_ratio_ci", "pval"),
+#'     .labels = c(rate = "Rate", rate_ratio = "Rate Ratio"),
+#'     .indent_mods = c(0L, 1L, 0L, 1L, 1L)
+#'   )
+#'   build_table(lyt = lyt, df = anl)
 
 summarize_glm_count <- function(lyt,
                                 vars,
@@ -445,7 +438,3 @@ summarize_glm_count <- function(lyt,
     extra_args = list(...)
   )
 }
-
-
-# Examples
-
