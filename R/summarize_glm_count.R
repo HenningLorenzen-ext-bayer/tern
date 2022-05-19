@@ -17,8 +17,8 @@ NULL
 #'   reference group.
 #'   - `covariates`: (`character`)\cr a vector that can contain single variable names (such as
 #'   `"X1"`), and/or interaction terms indicated by `"X1 * X2"`.
-#'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset to the predictions. If specified, this adds an offset to the predictions.
-#' @param `weights`(`numeric`)\cr a numeric value specifying weights used in averaging predictions.
+#'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset.
+#' @param `weights`(`character`)\cr a character vector specifying weights used in averaging predictions. Weights option passed to emmeans function (hyperlink) (link to emmeans documentation)
 #'
 #' @export
 #'
@@ -143,9 +143,9 @@ h_glm_quasipoisson <- function(.var,
 #'   reference group.
 #'   - `covariates`: (`character`)\cr a vector that can contain single variable names (such as
 #'   `"X1"`), and/or interaction terms indicated by `"X1 * X2"`.
-#'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset to the predictions.
-#' @param `weights`(`numeric`)\cr numeric value specifying weight used in averaging predictions.
-#' @param `distribution`(`character`)\cr a character value specifying the distribution used in the regression (Poisson, Quasipoisson, Negative Binomial).
+#'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset.
+#' @param `weights`(`character`)\cr character vector specifying weights used in averaging predictions. (link to emmeans)
+#' @param `distribution`(`character`)\cr a character value specifying the distribution used in the regression (poisson, quasipoisson).
 #'
 #' @export
 #'
@@ -176,8 +176,8 @@ h_glm_count <- function(.var,
 #' @param .df_row (`data frame`)\cr data set that includes all the variables that are called
 #'   in `.var` and `variables`.
 # `list` of `strings`)\cr list of model fitting results.
-#' @param conf_level (`numeric`) value used to derive the poisson mean.
-#' @param obj (`glm.fit`) fitted model object used to derive the mean estimates.
+#' @param conf_level (`numeric`) value used to derive the confidence interval for the rate.
+#' @param obj (`glm.fit`) fitted model object used to derive the mean rate estimates in each treatment arm.
 #' @param `arm`: (`string`)\cr group variable, for which the covariate adjusted means of multiple
 #'   groups will be summarized. Specifically, the first level of `arm` variable is taken as the
 #'   reference group.
@@ -232,18 +232,17 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
 }
 
 
-#' @describeIn summarize_ancova Statistics function that produces a named list of results
+#' @describeIn summarize_glm_count Statistics function that produces a named list of results
 #'   of the investigated poisson model.
 #' @inheritParams argument_convention
 #' @inheritParams h_glm_count
 #'
 #' @return A named list of 5 statistics:
 #'   - `n`: count of complete sample size for the group.
-#'   - `rate`: estimated number of events per time (or space).
-#'   - `rate_ci`: confidence level for difference in incidence rate in
-#'   comparison to the reference group.
-#'   - `rate_ratio`: Relative risk or incidence rate ratio.
-#'   - `rate_ratio_ci`: confidence level for the incidence rate ratio.
+#'   - `rate`: estimated event rate per follow-up time.
+#'   - `rate_ci`: confidence level for estimated rate per follow-up time.
+#'   - `rate_ratio`: Ratio of event rates in each treatment arm to the reference arm.
+#'   - `rate_ratio_ci`: confidence level for the rate ratio.
 #'   - `pval`: p-value.
 #'
 #' @export
@@ -372,7 +371,7 @@ a_glm_count <- make_afun(
 )
 
 #' @describeIn summarize_glm_count Layout creating function which can be be used for creating
-#'   summary tables for analysis of count data using generalized linear models (poisson, quasipoisson, negative binomial).
+#'   summary tables for analysis of count data using generalized linear models (poisson, quasipoisson).
 #' @inheritParams argument_convention
 #' @export
 #' @examples
