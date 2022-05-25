@@ -4,6 +4,7 @@
 
 library(magrittr)
 
+
 adsl <- scda::synthetic_cdisc_data("rcd_2022_02_28")$adsl
 adae <- scda::synthetic_cdisc_data("rcd_2022_02_28")$adae
 adsub <- scda::synthetic_cdisc_data("rcd_2022_02_28")$adsub
