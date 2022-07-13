@@ -18,16 +18,23 @@ NULL
 #'   - `covariates`: (`character`)\cr a vector that can contain single variable names (such as
 #'   `"X1"`), and/or interaction terms indicated by `"X1 * X2"`.
 #'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset.
-#' @param `weights`(`character`)\cr a character vector specifying weights used in averaging predictions. Weights option passed to emmeans function (hyperlink) (link to emmeans documentation)
+#' @param `weights`(`character`)\cr a character vector specifying weights used in averaging predictions. Number of weights must equal the number of levels included in the covariates.
+#'  Weights option passed to emmeans function (hyperlink) (link to emmeans documentation)
 #'
 #' @export
 #'
 #' @examples
-
+#'
+#' library(scda)
+#' library(dplyr)
+#' # data
+#' anl <- synthetic_cdisc_data("latest")$adtte %>%
+#'  filter(PARAMCD == "TNE")
+#'
 #' h_glm_poisson(
-#'   .var = "count",
+#'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "arm", offset = "ln_time_at_risk", covariates = c("histology", "stage", "time")),
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL),
 #'   weights = 0.5
 #' )
 
@@ -83,10 +90,9 @@ h_glm_poisson <- function(.var,
 #' @examples
 #'
 #' h_glm_quasipoisson(
-#'   .var = "count",
+#'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "arm", offset = "ln_time_at_risk", covariates = c("histology", "stage", "time")),
-#'   weights = 0.5
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1", "TRT01P"))
 #' )
 #'
 h_glm_quasipoisson <- function(.var,
@@ -106,7 +112,7 @@ h_glm_quasipoisson <- function(.var,
   }
 
   if (!is.null(variables$offset)) {
-    covariates <- variables$covariates
+    offset <- variables$offset
     forumla_new <- as.formula(paste("~ . +", paste("offset(", offset, ")")))
     formula <- update(formula, forumla_new)
   }
@@ -151,9 +157,9 @@ h_glm_quasipoisson <- function(.var,
 #'
 #' @examples
 #' h_glm_count(
-#'   .var = "count",
+#'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "arm", offset = "ln_time_at_risk", c("histology", "stage", "time")),
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates=NULL),
 #'   distribution = "poisson",
 #'   weights = 0.1
 #' )
@@ -252,9 +258,9 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
 #' s_glm_count(
 #'   df = anl,
 #'   .df_row = anl,
-#'   .var = "count",
+#'   .var = "AVAL",
 #'   .in_ref_col = FALSE,
-#'   variables = list(arm = arm, offset = "ln_time_at_risk", covariates = covars),
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1", "TRT01P")),
 #'   conf_level = 0.95,
 #'   distribution = "poisson",
 #'   rate_mean_method = "ppmeans"
@@ -347,7 +353,14 @@ s_glm_count <- function(df,
 #' @export
 #'
 #' @examples
-#' a_glm_count(df, .var, .df_row, variables, .ref_group, .in_ref_col = FALSE, conf_level)
+#' a_glm_count( df = anl,
+#' .var = "AVAL",
+#' .df_row = anl,
+#' variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1", "TRT01P")),
+#' .ref_group = "B: Placebo", .in_ref_col = TRUE,
+#' conf_level = 0.95,
+#' distribution = "poisson",
+#' rate_mean_method = "ppmeans")
 #'
 a_glm_count <- make_afun(
   s_glm_count,
@@ -377,35 +390,39 @@ a_glm_count <- make_afun(
 #' @examples
 #'
 #' lyt <- basic_table() %>%
-#'   split_cols_by(arm, ref_group = "B") %>%
+#'   split_cols_by("ARM", ref_group = "B: Placebo") %>%
 #'   add_colcounts() %>%
 #'   summarize_vars(
-#'     "count_f",
+#'     "AVAL",
 #'     var_labels = "Number of exacerbations per patient",
-#'     .stats = c("count_fraction")
-#'   ) %>%
+#'     .stats = c("mean"),
+#'     .formats = c("mean" = "xx.xxx"),
+#'     .label = c("Number of exacerbations per patient")
+#'     )%>%
 #'   summarize_glm_count(
-#'     vars = "count",
-#'     variables = list(arm = arm, offset = offset, covariates = NULL),
+#'     vars = "AVAL",
+#'     variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL),
 #'     conf_level = 0.95,
 #'     distribution = "poisson",
 #'     rate_mean_method = "emmeans",
 #'     var_labels = "Unadjusted exacerbation rate (per year)",
 #'     table_names = "unadj",
 #'     .stats = "rate",
-#'     .labels = c(rate = "Rate")
+#'     .labels = c(rate = "Rate"),
+#'     .formats = c("xx.xxx")
 #'   ) %>%
 #'   summarize_glm_count(
-#'     vars = "count",
-#'     variables = list(arm = arm, offset = "ln_time_at_risk", covariates = covars),
+#'     vars = "AVAL",
+#'     variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
 #'     conf_level = 0.95,
 #'     distribution = "quasipoisson",
 #'     rate_mean_method = "ppmeans",
 #'     var_labels = "Adjusted (QP) exacerbation rate (per year)",
 #'     table_names = "adj",
 #'     .stats = c("rate", "rate_ci", "rate_ratio", "rate_ratio_ci", "pval"),
-#'     .labels = c(rate = "Rate", rate_ratio = "Rate Ratio"),
-#'     .indent_mods = c(0L, 1L, 0L, 1L, 1L)
+#'     .labels = c(aval = "test", rate = "Rate", rate_ci = "Rate CI", rate_ratio = "Rate Ratio", rate_ratio_ci = "Rate Ratio CI", pval = "P value"),
+#'     .indent_mods = c(0L, 0L, 1L, 0L, 1L, 1L),
+#'     .formats = c("xx.xxx", "xx.xxx", rate_ci = "(xx.xxx, xx.xxx)", "xx.xxx", rate_ratio_ci = "(xx.xxx, xx.xxx)", "xx.xxx")
 #'   )
 #'   build_table(lyt = lyt, df = anl)
 
