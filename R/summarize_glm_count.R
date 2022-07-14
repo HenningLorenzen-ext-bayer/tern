@@ -191,6 +191,7 @@ h_glm_count <- function(.var,
 #'
 #' @examples
 #'
+#' #update this example with fit object
 #' h_ppmeans(
 #'   obj = obj,
 #'   .df_row = anl,
@@ -260,10 +261,10 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
 #'   .df_row = anl,
 #'   .var = "AVAL",
 #'   .in_ref_col = FALSE,
-#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1", "TRT01P")),
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
 #'   conf_level = 0.95,
-#'   distribution = "poisson",
-#'   rate_mean_method = "ppmeans"
+#'   distribution = "quasipoisson",
+#'   rate_mean_method = "emmeans"
 #' )
 #'
 s_glm_count <- function(df,
@@ -356,7 +357,7 @@ s_glm_count <- function(df,
 #' a_glm_count( df = anl,
 #' .var = "AVAL",
 #' .df_row = anl,
-#' variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1", "TRT01P")),
+#' variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
 #' .ref_group = "B: Placebo", .in_ref_col = TRUE,
 #' conf_level = 0.95,
 #' distribution = "poisson",
@@ -376,7 +377,7 @@ a_glm_count <- make_afun(
     "n" = "xx",
     "rate" = "xx.xxxx",
     "rate_ci" = "(xx.xxxx, xx.xxxx)",
-    "rate_ratio" = "xx.xxxx",
+    "rate_ratio" = "(xx.xxxx, xx.xxxx)",
     "rate_ratio_ci" = "(xx.xxxx, xx.xxxx)",
     "pval" = "x.xxxx | (<0.0001)"
   ),
@@ -420,9 +421,9 @@ a_glm_count <- make_afun(
 #'     var_labels = "Adjusted (QP) exacerbation rate (per year)",
 #'     table_names = "adj",
 #'     .stats = c("rate", "rate_ci", "rate_ratio", "rate_ratio_ci", "pval"),
-#'     .labels = c(aval = "test", rate = "Rate", rate_ci = "Rate CI", rate_ratio = "Rate Ratio", rate_ratio_ci = "Rate Ratio CI", pval = "P value"),
-#'     .indent_mods = c(0L, 0L, 1L, 0L, 1L, 1L),
-#'     .formats = c("xx.xxx", "xx.xxx", rate_ci = "(xx.xxx, xx.xxx)", "xx.xxx", rate_ratio_ci = "(xx.xxx, xx.xxx)", "xx.xxx")
+#'     .labels = c(rate = "Rate", rate_ci = "Rate CI", rate_ratio = "Rate Ratio", rate_ratio_ci = "Rate Ratio CI", pval = "P value"),
+#'     .indent_mods = c(0L, 1L, 0L, 1L, 1L),
+#'     .formats = c(rate = "xx.xxxx", rate_ci = "(xx.xxxx, xx.xxxx)", rate_ratio = "xx.xxxx", rate_ratio_ci = "(xx.xxxx, xx.xxxx)", pval = "x.xxxx | (<0.0001)")
 #'   )
 #'   build_table(lyt = lyt, df = anl)
 
