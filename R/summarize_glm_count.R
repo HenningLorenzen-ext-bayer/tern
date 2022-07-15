@@ -30,6 +30,7 @@ NULL
 #' # data
 #' anl <- synthetic_cdisc_data("latest")$adtte %>%
 #'  filter(PARAMCD == "TNE")
+#' anl$AVAL_f <- as.factor(anl$AVAL)
 #'
 #' h_glm_poisson(
 #'   .var = "AVAL",
@@ -191,7 +192,6 @@ h_glm_count <- function(.var,
 #'   .df_row = anl,
 #'   arm = "ARM",
 #'   conf_level = 0.95
-#' )
 #'
 h_ppmeans <- function(obj, .df_row, arm, conf_level) {
 
@@ -206,6 +206,8 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
 
     mf <- model.frame(obj$formula, data = temp)
     X <- model.matrix(obj$formula, data = mf)
+    print(colnames(X))
+
 
     rate <- predict(obj, newdata = mf, type = "response")
     rate_hat <- mean(rate)
@@ -386,10 +388,10 @@ a_glm_count <- make_afun(
 #'   split_cols_by("ARM", ref_group = "B: Placebo") %>%
 #'   add_colcounts() %>%
 #'   summarize_vars(
-#'     "AVAL",
+#'     "AVAL_f",
 #'     var_labels = "Number of exacerbations per patient",
-#'     .stats = c("mean"),
-#'     .formats = c("mean" = "xx.xxx"),
+#'     .stats = c("count_fraction"),
+#'     .formats = c("count_fraction" = "xx (xx.xx%)"),
 #'     .label = c("Number of exacerbations per patient")
 #'     ) %>%
 #'   summarize_glm_count(
