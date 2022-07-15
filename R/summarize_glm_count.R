@@ -34,8 +34,7 @@ NULL
 #' h_glm_poisson(
 #'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL),
-#'   weights = 0.5
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL)
 #' )
 
 h_glm_poisson <- function(.var,
@@ -43,25 +42,20 @@ h_glm_poisson <- function(.var,
                           variables,
                           weights) {
   arm <- variables$arm
+  covariates <- variables$covariates
+  offset <- .df_row[[variables$offset]]
 
   formula <- as.formula(paste0(
-    .var, " ~ ", " + ", arm
+    .var, " ~ ",
+    " + ",
+    paste(covariates, collapse = " + "),
+    " + ",
+    arm
   ))
-
-  if (!is.null(variables$covariates)) {
-    covariates <- variables$covariates
-    forumla_new <- as.formula(paste("~ . +", paste(covariates, collapse = " + ")))
-    formula <- update(formula, forumla_new)
-  }
-
-  if (!is.null(variables$offset)) {
-    offset <- variables$offset
-    forumla_new <- as.formula(paste("~ . +", paste("offset(", offset, ")")))
-    formula <- update(formula, forumla_new)
-  }
 
   glm_fit <- glm(
     formula = formula,
+    offset = offset,
     data = .df_row,
     family = poisson(link = "log")
   )
@@ -92,7 +86,7 @@ h_glm_poisson <- function(.var,
 #' h_glm_quasipoisson(
 #'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1", "TRT01P"))
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1"))
 #' )
 #'
 h_glm_quasipoisson <- function(.var,
@@ -100,25 +94,20 @@ h_glm_quasipoisson <- function(.var,
                                variables,
                                weights) {
   arm <- variables$arm
+  covariates <- variables$covariates
+  offset <- .df_row[[variables$offset]]
 
   formula <- as.formula(paste0(
-    .var, " ~ ", " + ", arm
+    .var, " ~ ",
+    " + ",
+    paste(covariates, collapse = " + "),
+    " + ",
+    arm
   ))
-
-  if (!is.null(variables$covariates)) {
-    covariates <- variables$covariates
-    forumla_new <- as.formula(paste("~ . +", paste(covariates, collapse = " + ")))
-    formula <- update(formula, forumla_new)
-  }
-
-  if (!is.null(variables$offset)) {
-    offset <- variables$offset
-    forumla_new <- as.formula(paste("~ . +", paste("offset(", offset, ")")))
-    formula <- update(formula, forumla_new)
-  }
 
   glm_fit <- glm(
     formula = formula,
+    offset = offset,
     data = .df_row,
     family = quasipoisson(link = "log")
   )
@@ -159,9 +148,8 @@ h_glm_quasipoisson <- function(.var,
 #' h_glm_count(
 #'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates=NULL),
-#'   distribution = "poisson",
-#'   weights = 0.1
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL),
+#'   distribution = "poisson"
 #' )
 #'
 h_glm_count <- function(.var,
@@ -191,33 +179,37 @@ h_glm_count <- function(.var,
 #'
 #' @examples
 #'
-#' #update this example with fit object
-#' h_ppmeans(
-#'   obj = obj,
+#' fits <- h_glm_count(
+#'   .var = "AVAL",
 #'   .df_row = anl,
-#'   arm = "arm",
-#'   conf_level = 0.9
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
+#'   distribution = "quasipoisson"
+#' )
+#'
+#' h_ppmeans(
+#'   obj = fits$glm_fit,
+#'   .df_row = anl,
+#'   arm = "ARM",
+#'   conf_level = 0.95
 #' )
 #'
 h_ppmeans <- function(obj, .df_row, arm, conf_level) {
+
   alpha <- 1 - conf_level
   p <- 1 - alpha / 2
 
   arm_levels <- levels(.df_row[[arm]])
 
   out <- lapply(arm_levels, function(lev) {
-    lev <- arm_levels[[1]]
-
     temp <- .df_row
     temp[[arm]] <- factor(lev, levels = arm_levels)
 
     mf <- model.frame(obj$formula, data = temp)
     X <- model.matrix(obj$formula, data = mf)
 
-    rate <- predict(obj, newdata = temp, type = "response")
+    rate <- predict(obj, newdata = mf, type = "response")
     rate_hat <- mean(rate)
 
-    ## Delta Method for log link function
     zz <- colMeans(rate * X)
     se <- sqrt(as.numeric(t(zz) %*% vcov(obj) %*% zz))
     rate_lwr <- rate_hat * exp(-qnorm(p) * se / rate_hat)
@@ -237,7 +229,6 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
   out[[arm]] <- rownames(out)
   out
 }
-
 
 #' @describeIn summarize_glm_count Statistics function that produces a named list of results
 #'   of the investigated poisson model.
@@ -264,7 +255,7 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
 #'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
 #'   conf_level = 0.95,
 #'   distribution = "quasipoisson",
-#'   rate_mean_method = "emmeans"
+#'   rate_mean_method = "ppmeans"
 #' )
 #'
 s_glm_count <- function(df,
@@ -355,13 +346,14 @@ s_glm_count <- function(df,
 #'
 #' @examples
 #' a_glm_count( df = anl,
-#' .var = "AVAL",
-#' .df_row = anl,
-#' variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
-#' .ref_group = "B: Placebo", .in_ref_col = TRUE,
-#' conf_level = 0.95,
-#' distribution = "poisson",
-#' rate_mean_method = "ppmeans")
+#'   .var = "AVAL",
+#'   .df_row = anl,
+#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
+#'   .ref_group = "B: Placebo", .in_ref_col = TRUE,
+#'   conf_level = 0.95,
+#'   distribution = "poisson",
+#'   rate_mean_method = "ppmeans"
+#' )
 #'
 a_glm_count <- make_afun(
   s_glm_count,
@@ -377,7 +369,7 @@ a_glm_count <- make_afun(
     "n" = "xx",
     "rate" = "xx.xxxx",
     "rate_ci" = "(xx.xxxx, xx.xxxx)",
-    "rate_ratio" = "(xx.xxxx, xx.xxxx)",
+    "rate_ratio" = "xx.xxxx",
     "rate_ratio_ci" = "(xx.xxxx, xx.xxxx)",
     "pval" = "x.xxxx | (<0.0001)"
   ),
@@ -399,7 +391,7 @@ a_glm_count <- make_afun(
 #'     .stats = c("mean"),
 #'     .formats = c("mean" = "xx.xxx"),
 #'     .label = c("Number of exacerbations per patient")
-#'     )%>%
+#'     ) %>%
 #'   summarize_glm_count(
 #'     vars = "AVAL",
 #'     variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL),
@@ -408,9 +400,8 @@ a_glm_count <- make_afun(
 #'     rate_mean_method = "emmeans",
 #'     var_labels = "Unadjusted exacerbation rate (per year)",
 #'     table_names = "unadj",
-#'     .stats = "rate",
-#'     .labels = c(rate = "Rate"),
-#'     .formats = c("xx.xxx")
+#'     .stats = c("rate"),
+#'     .labels = c(rate = "Rate")
 #'   ) %>%
 #'   summarize_glm_count(
 #'     vars = "AVAL",
@@ -420,10 +411,8 @@ a_glm_count <- make_afun(
 #'     rate_mean_method = "ppmeans",
 #'     var_labels = "Adjusted (QP) exacerbation rate (per year)",
 #'     table_names = "adj",
-#'     .stats = c("rate", "rate_ci", "rate_ratio", "rate_ratio_ci", "pval"),
-#'     .labels = c(rate = "Rate", rate_ci = "Rate CI", rate_ratio = "Rate Ratio", rate_ratio_ci = "Rate Ratio CI", pval = "P value"),
-#'     .indent_mods = c(0L, 1L, 0L, 1L, 1L),
-#'     .formats = c(rate = "xx.xxxx", rate_ci = "(xx.xxxx, xx.xxxx)", rate_ratio = "xx.xxxx", rate_ratio_ci = "(xx.xxxx, xx.xxxx)", pval = "x.xxxx | (<0.0001)")
+#'     .stats = c("rate", "rate_ci"),
+#'     .labels = c(rate = "Rate")
 #'   )
 #'   build_table(lyt = lyt, df = anl)
 
