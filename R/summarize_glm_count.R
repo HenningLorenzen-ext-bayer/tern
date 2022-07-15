@@ -192,6 +192,7 @@ h_glm_count <- function(.var,
 #'   .df_row = anl,
 #'   arm = "ARM",
 #'   conf_level = 0.95
+#'   )
 #'
 h_ppmeans <- function(obj, .df_row, arm, conf_level) {
 
