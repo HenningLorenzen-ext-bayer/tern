@@ -1,6 +1,9 @@
 #' Summary for Poisson Negative Binomial.
 #'
-#' Summarize results of a Poisson Negative Binomial Regression. This can be used to analyze count and/or frequency data using a linear model.
+#' @description `r lifecycle::badge("experimental")`
+#'
+#' Summarize results of a Poisson Negative Binomial Regression.
+#' This can be used to analyze count and/or frequency data using a linear model.
 #'
 #' @name summarize_glm_count
 #'
@@ -18,26 +21,28 @@ NULL
 #'   - `covariates`: (`character`)\cr a vector that can contain single variable names (such as
 #'   `"X1"`), and/or interaction terms indicated by `"X1 * X2"`.
 #'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset.
-#' @param `weights`(`character`)\cr a character vector specifying weights used in averaging predictions. Number of weights must equal the number of levels included in the covariates.
+#' @param `weights`(`character`)\cr a character vector specifying weights used
+#'  in averaging predictions. Number of weights must equal the number of levels included in the covariates.
 #'  Weights option passed to emmeans function (hyperlink) (link to emmeans documentation)
-#'
-#' @export
 #'
 #' @examples
 #'
 #' library(scda)
 #' library(dplyr)
-#' # data
 #' anl <- synthetic_cdisc_data("latest")$adtte %>%
-#'  filter(PARAMCD == "TNE")
+#'   filter(PARAMCD == "TNE")
 #' anl$AVAL_f <- as.factor(anl$AVAL)
 #'
+#' # Internal function - h_glm_poisson
+#' \dontrun{
 #' h_glm_poisson(
 #'   .var = "AVAL",
 #'   .df_row = anl,
 #'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL)
 #' )
-
+#' }
+#'
+#' @keywords internal
 h_glm_poisson <- function(.var,
                           .df_row,
                           variables,
@@ -80,16 +85,18 @@ h_glm_poisson <- function(.var,
 #' @inheritParams argument_convention
 #' @inheritParams h_glm_poisson
 #'
-#' @export
-#'
 #' @examples
 #'
+#' # Internal function - h_glm_quasipoisson
+#' \dontrun{
 #' h_glm_quasipoisson(
 #'   .var = "AVAL",
 #'   .df_row = anl,
 #'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1"))
 #' )
+#' }
 #'
+#' @keywords internal
 h_glm_quasipoisson <- function(.var,
                                .df_row,
                                variables,
@@ -128,7 +135,8 @@ h_glm_quasipoisson <- function(.var,
   )
 }
 
-#' @describeIn summarize_glm_count Helper function to return the results of the selected model (poisson, quasipossion, negative binomial).
+#' @describeIn summarize_glm_count Helper function to return the results of the
+#' selected model (poisson, quasipossion, negative binomial).
 #' @inheritParams argument_convention
 #' @param .df_row (`data frame`)\cr data set that includes all the variables that are called
 #'   in `.var` and `variables`.
@@ -140,19 +148,24 @@ h_glm_quasipoisson <- function(.var,
 #'   - `covariates`: (`character`)\cr a vector that can contain single variable names (such as
 #'   `"X1"`), and/or interaction terms indicated by `"X1 * X2"`.
 #'   - `offset`: (`numeric`)\cr a numeric vector or scalar adding an offset.
-#' @param `weights`(`character`)\cr character vector specifying weights used in averaging predictions. (link to emmeans)
-#' @param `distribution`(`character`)\cr a character value specifying the distribution used in the regression (poisson, quasipoisson).
+#' @param `weights`(`character`)\cr character vector specifying weights used in averaging predictions.
+#' @param `distribution`(`character`)\cr a character value specifying the distribution
+#' used in the regression (poisson, quasipoisson).
 #'
-#' @export
 #'
 #' @examples
+#'
+#' # Internal function - h_glm_count
+#' \dontrun{
 #' h_glm_count(
 #'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL),
+#'   variables = list(arm = "ARMCD", offset = "lgTMATRSK", covariates = NULL),
 #'   distribution = "poisson"
 #' )
+#' }
 #'
+#' @keywords internal
 h_glm_count <- function(.var,
                         .df_row,
                         variables,
@@ -176,14 +189,15 @@ h_glm_count <- function(.var,
 #' @param `arm`: (`string`)\cr group variable, for which the covariate adjusted means of multiple
 #'   groups will be summarized. Specifically, the first level of `arm` variable is taken as the
 #'   reference group.
-#' @export
 #'
 #' @examples
 #'
+#' # Internal function - h_ppmeans
+#' \dontrun{
 #' fits <- h_glm_count(
 #'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
+#'   variables = list(arm = "ARMCD", offset = "lgTMATRSK", covariates = c("REGION1")),
 #'   distribution = "quasipoisson"
 #' )
 #'
@@ -192,10 +206,11 @@ h_glm_count <- function(.var,
 #'   .df_row = anl,
 #'   arm = "ARM",
 #'   conf_level = 0.95
-#'   )
+#' )
+#' }
 #'
+#' @keywords internal
 h_ppmeans <- function(obj, .df_row, arm, conf_level) {
-
   alpha <- 1 - conf_level
   p <- 1 - alpha / 2
 
@@ -206,9 +221,7 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
     temp[[arm]] <- factor(lev, levels = arm_levels)
 
     mf <- model.frame(obj$formula, data = temp)
-    X <- model.matrix(obj$formula, data = mf)
-    print(colnames(X))
-
+    X <- model.matrix(obj$formula, data = mf) # nolint
 
     rate <- predict(obj, newdata = mf, type = "response")
     rate_hat <- mean(rate)
@@ -246,21 +259,25 @@ h_ppmeans <- function(obj, .df_row, arm, conf_level) {
 #'   - `rate_ratio_ci`: confidence level for the rate ratio.
 #'   - `pval`: p-value.
 #'
-#' @export
 #'
 #' @examples
 #'
+#' # Internal function - s_change_from_baseline
+#' \dontrun{
 #' s_glm_count(
-#'   df = anl,
+#'   df = anl %>%
+#'     filter(ARMCD == "ARM B"),
 #'   .df_row = anl,
 #'   .var = "AVAL",
-#'   .in_ref_col = FALSE,
-#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
+#'   .in_ref_col = TRUE,
+#'   variables = list(arm = "ARMCD", offset = "lgTMATRSK", covariates = c("REGION1")),
 #'   conf_level = 0.95,
 #'   distribution = "quasipoisson",
 #'   rate_mean_method = "ppmeans"
 #' )
+#'}
 #'
+#' @keywords internal
 s_glm_count <- function(df,
                         .var,
                         .df_row,
@@ -276,6 +293,9 @@ s_glm_count <- function(df,
 
   y <- df[[.var]]
   smry_level <- as.character(unique(df[[arm]]))
+
+  # ensure there is only 1 value
+  checkmate::assert_scalar(smry_level)
 
   results <- h_glm_count(
     .var = .var,
@@ -312,7 +332,10 @@ s_glm_count <- function(df,
     emmeans_contrasts <- emmeans::contrast(
       results$emmeans_fit,
       method = "trt.vs.ctrl",
-      ref = 1
+      ref = grep(
+        as.character(unique(.ref_group[[arm]])),
+        as.data.frame(results$emmeans_fit)[[arm]]
+      )
     )
 
     contrasts_smry <- summary(
@@ -345,19 +368,25 @@ s_glm_count <- function(df,
 
 #' @describeIn summarize_glm_count Formatted Analysis function which can be further customized by calling
 #'   [rtables::make_afun()] on it. It is used as `afun` in [rtables::analyze()].
-#' @export
 #'
 #' @examples
-#' a_glm_count( df = anl,
+#'
+#' # Internal function - s_change_from_baseline
+#' \dontrun{
+#' a_glm_count(
+#'   df = anl %>%
+#'     filter(ARMCD == "ARM A"),
 #'   .var = "AVAL",
 #'   .df_row = anl,
-#'   variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = c("REGION1")),
-#'   .ref_group = "B: Placebo", .in_ref_col = TRUE,
+#'   variables = list(arm = "ARMCD", offset = "lgTMATRSK", covariates = c("REGION1")),
+#'   .ref_group = "ARM B", .in_ref_col = TRUE,
 #'   conf_level = 0.95,
 #'   distribution = "poisson",
 #'   rate_mean_method = "ppmeans"
 #' )
+#' }
 #'
+#' @keywords internal
 a_glm_count <- make_afun(
   s_glm_count,
   .indent_mods = c(
@@ -385,6 +414,12 @@ a_glm_count <- make_afun(
 #' @export
 #' @examples
 #'
+#' library(scda)
+#' library(dplyr)
+#' anl <- synthetic_cdisc_data("latest")$adtte %>%
+#'   filter(PARAMCD == "TNE")
+#' anl$AVAL_f <- as.factor(anl$AVAL)
+#'
 #' lyt <- basic_table() %>%
 #'   split_cols_by("ARM", ref_group = "B: Placebo") %>%
 #'   add_colcounts() %>%
@@ -394,7 +429,7 @@ a_glm_count <- make_afun(
 #'     .stats = c("count_fraction"),
 #'     .formats = c("count_fraction" = "xx (xx.xx%)"),
 #'     .label = c("Number of exacerbations per patient")
-#'     ) %>%
+#'   ) %>%
 #'   summarize_glm_count(
 #'     vars = "AVAL",
 #'     variables = list(arm = "ARM", offset = "lgTMATRSK", covariates = NULL),
@@ -414,11 +449,13 @@ a_glm_count <- make_afun(
 #'     rate_mean_method = "ppmeans",
 #'     var_labels = "Adjusted (QP) exacerbation rate (per year)",
 #'     table_names = "adj",
-#'     .stats = c("rate", "rate_ci"),
-#'     .labels = c(rate = "Rate")
+#'     .stats = c("rate", "rate_ci", "rate_ratio", "rate_ratio_ci", "pval"),
+#'     .labels = c(
+#'       rate = "Rate", rate_ci = "Rate CI", rate_ratio = "Rate Ratio",
+#'       rate_ratio_ci = "Rate Ratio CI", pval = "p value"
+#'     )
 #'   )
-#'   build_table(lyt = lyt, df = anl)
-
+#' build_table(lyt = lyt, df = anl)
 summarize_glm_count <- function(lyt,
                                 vars,
                                 var_labels,
