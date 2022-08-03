@@ -103,7 +103,34 @@ summary_in_cols.character <- function(x,
   lapply(results, formatters::with_label, row_label)
 }
 
+#' @describeIn summarize_variables_in_columns a wrapper of [s_summary.logical()]
+#'  function that produces a named list of statistics to include as columns.
+#'
+#' @inheritParams argument_convention
+#' @param custom_label (`string` or `NULL`)\cr if provided and `labelstr` is
+#'  empty then this will be used as the row label.
+#'
+#' @return A named list of all statistics returned by [s_summary.logical()].
+#' See [s_summary.logical()] to be aware of all available statistics.
+#'
+#' @export
+summary_in_cols.logical <- function(x,
+                                    labelstr = "",
+                                    custom_label = NULL,
+                                    ...) {
+  row_label <- if (labelstr != "") {
+    labelstr
+  } else if (!is.null(custom_label)) {
+    custom_label
+  } else {
+    "Statistics"
+  }
 
+  # Calling s_summary.logical
+  results <- s_summary.logical(x)
+
+  lapply(results, formatters::with_label, row_label)
+}
 
 #' @inheritParams argument_convention
 #'
@@ -211,6 +238,7 @@ summarize_vars_in_cols <- function(lyt,
                                    ),
                                    .formats = NULL,
                                    .indent_mods = NULL,
+                                   .format_na_strs = NULL,
                                    col_split = TRUE) {
   format_candidates <- .formats
   if (is.null(.formats)) {
@@ -218,12 +246,16 @@ summarize_vars_in_cols <- function(lyt,
     format_candidates <- summary_formats(var_type)
   }
 
+  format_na_candidates <- .format_na_strs
+  print(format_na_candidates[names(format_na_candidates) == "mean"])
+
   afun_list <- Map(
     function(stat) {
       make_afun(
         summary_in_cols,
         .stats = stat,
-        .formats = format_candidates[names(format_candidates) == stat]
+        .formats = format_candidates[names(format_candidates) == stat],
+        .format_na_strs = format_na_candidates[names(format_na_candidates) == stat]
       )
     },
     stat = .stats
