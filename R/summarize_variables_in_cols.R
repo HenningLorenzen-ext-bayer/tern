@@ -255,7 +255,7 @@ summarize_vars_in_cols <- function(lyt,
         summary_in_cols,
         .stats = stat,
         .formats = format_candidates[names(format_candidates) == stat],
-        .format_na_strs = format_na_candidates[names(format_na_candidates) == stat]
+        .format_na_strs = format_na_candidates[names(format_na_candidates) == stat],
       )
     },
     stat = .stats
